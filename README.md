@@ -1,0 +1,1 @@
+# go-fixture-loader
