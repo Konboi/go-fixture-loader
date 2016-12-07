@@ -26,6 +26,22 @@ func TestGetDataFromCSV(t *testing.T) {
 		}
 	})
 
+	t.Run("load emrty csv", func(t *testing.T) {
+		file := "_data/zero.csv"
+		data, err := fx.getDataFromCSV(file, "csv")
+		if err != nil {
+			t.Fatalf("[error] get data from csv: %v", err)
+		}
+
+		if !reflect.DeepEqual(data.columns, columns) {
+			t.Fatalf("[error] get data from csv: expect: %v but %v", columns, data.columns)
+		}
+
+		if len(data.rows) != 0 {
+			t.Fatalf("[error] load data from csv: %v", data.rows)
+		}
+	})
+
 	t.Run("load tsv", func(t *testing.T) {
 		file := "_data/item.tsv"
 		data, err := fx.getDataFromCSV(file, "tsv")
