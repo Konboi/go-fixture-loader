@@ -18,13 +18,13 @@ func (fx FixtureLoader) getDataFromJSON(file string) (data, error) {
 	if jsonData == nil {
 		return data{}, fmt.Errorf("[error] please check file data format")
 	}
-	rows := make([]map[string]string, 0)
 
+	rows := make([]map[string]string, 0)
 	for _, d := range jsonData.([]interface{}) {
 		if _, ok := d.(map[string]interface{}); !ok {
 			return data{}, fmt.Errorf("[error] please check json data format not. format isn't map[string]interface{} ")
 		}
-		row := dataToMapString(d.(map[string]interface{}))
+		row := stringInterfaceToMapString(d.(map[string]interface{}))
 		rows = append(rows, row)
 	}
 
@@ -44,17 +44,10 @@ func (fx FixtureLoader) getDataFromJSON(file string) (data, error) {
 	return data, nil
 }
 
-func dataToMapString(d map[string]interface{}) map[string]string {
+func stringInterfaceToMapString(d map[string]interface{}) map[string]string {
 	row := make(map[string]string, len(d))
 	for key, value := range d {
-		switch t := value.(type) {
-		case string:
-			row[key] = value.(string)
-		case float64:
-			row[key] = strconv.Itoa(int(value.(float64)))
-		default:
-			log.Fatalf("[error] not define type: %v. please issue", t)
-		}
+		row[key] = fmt.Sprint(value)
 	}
 
 	return row
