@@ -66,8 +66,8 @@ func TestLoadFixrure(t *testing.T) {
 		t.Fatal("[error] item.csv load error: %v", items)
 	}
 
-	t.Run("adding json", func(t *testing.T) {
-		fl.LoadFixture("_data/item.json", Option{})
+	t.Run("adding yaml", func(t *testing.T) {
+		fl.LoadFixture("_data/item.yaml", Option{})
 
 		var count int
 		row := db.QueryRow("SELECT COUNT(*) FROM item")
@@ -94,39 +94,44 @@ func TestLoadFixrure(t *testing.T) {
 			items = append(items, item)
 		}
 
-		if items[3].name != "木刀" {
+		if items[3].name != "ホーリーランス" {
 			t.Fatal("[error] item.csv load error: %v", items)
 		}
 
 	})
 
-	defer truncateTable()
-}
+	t.Run("adding json", func(t *testing.T) {
+		fl.LoadFixture("_data/item.json", Option{})
 
-func truncateTable() {
-	db, err := sql.Open("mysql", testMysqld.Datasource("test", "", "", 0))
-	if err != nil {
-		log.Fatal("db connection error:", err.Error())
-	}
-
-	rows, err := db.Query("SHOW TABLES")
-	if err != nil {
-		log.Fatal("[error] SHOW TABLES:", err.Error())
-	}
-
-	for rows.Next() {
-		var table string
-		err := rows.Scan(&table)
+		var count int
+		row := db.QueryRow("SELECT COUNT(*) FROM item")
+		err = row.Scan(&count)
 		if err != nil {
-			log.Fatal("[error] scan table", err.Error())
+			t.Fatal("[error] select error:", err.Error())
 		}
-		log.Println(table)
-		_, err = db.Exec("TRUNCATE TABLE " + table)
+
+		if count != 6 {
+			t.Fatal("[error] item.json load error")
+		}
+
+		items := make([]item, 0)
+		rows, err := db.Query("SELECT * FROM item ORDER BY id")
 		if err != nil {
-			log.Fatal("[error] truncate table:", err.Error())
+			t.Fatal("[error] select error:", err.Error())
 		}
-	}
-	defer db.Close()
+		for rows.Next() {
+			item := item{}
+			err = rows.Scan(&item.id, &item.name)
+			if err != nil {
+				t.Fatal("[error] scan rows:", err.Error())
+			}
+			items = append(items, item)
+		}
+
+		if items[5].name != "木刀" {
+			t.Fatal("[error] item.csv load error: %v", items)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
