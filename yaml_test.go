@@ -2,6 +2,7 @@ package loader
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -17,6 +18,8 @@ func TestGetDataFromYAML(t *testing.T) {
 			t.Fatalf("[error] get data from yaml: %v", err)
 		}
 
+		sort.Strings(data.columns)
+		sort.Strings(columns)
 		if !reflect.DeepEqual(data.columns, columns) {
 			t.Fatalf("[error] get data from yaml: expect: %v but %v", columns, data.columns)
 		}

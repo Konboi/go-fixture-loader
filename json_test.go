@@ -2,6 +2,7 @@ package loader
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -19,6 +20,8 @@ func TestGetDataFromJSON(t *testing.T) {
 			t.Fatalf("[error] get data from json: %v", err)
 		}
 
+		sort.Strings(data.columns)
+		sort.Strings(columns)
 		if !reflect.DeepEqual(data.columns, columns) {
 			t.Fatalf("[error] get data from csv: expect: %v but %v", columns, data.columns)
 		}
