@@ -1,0 +1,5 @@
+package: github.com/Konboi/go-fixture-loader
+import:
+- package: github.com/shogo82148/txmanager
+- package: github.com/Masterminds/squirrel
+- package: github.com/lestrrat/go-test-mysqld
