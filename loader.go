@@ -98,8 +98,11 @@ func (fl FixtureLoader) LoadFixture(file string, opt Option) error {
 	var err error
 	if option.format == "csv" || option.format == "tsv" {
 		data, err = fl.getDataFromCSV(file, option.format)
+	} else if option.format == "json" {
+		data, err = fl.getDataFromJSON(file)
+
 	} else {
-		err = fmt.Errorf("not support format")
+		err = fmt.Errorf("not support format: %s", option.format)
 	}
 
 	if err != nil {

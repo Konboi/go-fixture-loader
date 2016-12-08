@@ -66,6 +66,40 @@ func TestLoadFixrure(t *testing.T) {
 		t.Fatal("[error] item.csv load error: %v", items)
 	}
 
+	t.Run("adding json", func(t *testing.T) {
+		fl.LoadFixture("_data/item.json", Option{})
+
+		var count int
+		row := db.QueryRow("SELECT COUNT(*) FROM item")
+		err = row.Scan(&count)
+		if err != nil {
+			t.Fatal("[error] select error:", err.Error())
+		}
+
+		if count != 4 {
+			t.Fatal("[error] item.json load error")
+		}
+
+		items := make([]item, 0)
+		rows, err := db.Query("SELECT * FROM item ORDER BY id")
+		if err != nil {
+			t.Fatal("[error] select error:", err.Error())
+		}
+		for rows.Next() {
+			item := item{}
+			err = rows.Scan(&item.id, &item.name)
+			if err != nil {
+				t.Fatal("[error] scan rows:", err.Error())
+			}
+			items = append(items, item)
+		}
+
+		if items[3].name != "木刀" {
+			t.Fatal("[error] item.csv load error: %v", items)
+		}
+
+	})
+
 	defer truncateTable()
 }
 
