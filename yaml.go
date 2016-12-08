@@ -27,7 +27,7 @@ func (fx FixtureLoader) getDataFromYAML(file string) (data, error) {
 	}
 
 	columns := make([]string, 0)
-	for key, _ := range rows[0] {
+	for key := range rows[0] {
 		columns = append(columns, key)
 	}
 

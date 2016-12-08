@@ -32,7 +32,7 @@ func (fx FixtureLoader) getDataFromJSON(file string) (data, error) {
 		return data{}, fmt.Errorf("[error] %s is data empty", file)
 	}
 	columns := make([]string, 0)
-	for key, _ := range rows[0] {
+	for key := range rows[0] {
 		columns = append(columns, key)
 	}
 
