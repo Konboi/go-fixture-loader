@@ -26,7 +26,7 @@ func TestGetDataFromCSV(t *testing.T) {
 		}
 	})
 
-	t.Run("load emrty csv", func(t *testing.T) {
+	t.Run("load empty csv", func(t *testing.T) {
 		file := "_data/zero.csv"
 		data, err := fx.getDataFromCSV(file, "csv")
 		if err != nil {
