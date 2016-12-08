@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"strconv"
 )
 
 func (fx FixtureLoader) getDataFromJSON(file string) (data, error) {

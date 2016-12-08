@@ -100,7 +100,8 @@ func (fl FixtureLoader) LoadFixture(file string, opt Option) error {
 		data, err = fl.getDataFromCSV(file, option.format)
 	} else if option.format == "json" {
 		data, err = fl.getDataFromJSON(file)
-
+	} else if option.format == "yaml" || option.format == "yml" {
+		data, err = fl.getDataFromYAML(file)
 	} else {
 		err = fmt.Errorf("not support format: %s", option.format)
 	}
