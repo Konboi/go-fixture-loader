@@ -12,6 +12,7 @@ import (
 	"github.com/shogo82148/txmanager"
 )
 
+// FixtureLoader is XXX
 type FixtureLoader struct {
 	option    option
 	db        *sql.DB
@@ -27,6 +28,7 @@ type option struct {
 	format     string
 }
 
+// Option is XXX
 type Option map[string]interface{}
 
 type data struct {
@@ -44,6 +46,7 @@ func init() {
 	formatRegexp = regexp.MustCompile(`\.([^.]*$)`)
 }
 
+// New is return FixtureLoader
 func New(db *sql.DB, opt Option) FixtureLoader {
 	txManager := txmanager.NewDB(db)
 
@@ -56,6 +59,7 @@ func New(db *sql.DB, opt Option) FixtureLoader {
 	}
 }
 
+// LoadFixture is load fixture
 func (fl FixtureLoader) LoadFixture(file string, opt Option) error {
 	option := fl.option
 
