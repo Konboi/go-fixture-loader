@@ -244,3 +244,11 @@ func buildOnDuplicate(columns []string, builder squirrel.InsertBuilder) squirrel
 	suffix := fmt.Sprintf("ON DUPLICATE KEY UPDATE %s", strings.Join(values, ", "))
 	return builder.Suffix(suffix)
 }
+
+func insertValue(value string) interface{} {
+	if len(value) == 0 {
+		return squirrel.Expr("DEFAULT")
+	}
+
+	return value
+}
