@@ -38,8 +38,9 @@ type data struct {
 }
 
 var (
-	baseNameRegexp *regexp.Regexp
-	formatRegexp   *regexp.Regexp
+	baseNameRegexp  *regexp.Regexp
+	formatRegexp    *regexp.Regexp
+	bulkInsertLimit = 2000
 )
 
 func init() {
@@ -149,12 +150,30 @@ func (fl FixtureLoader) loadFixtureFromData(data data, opt option) error {
 	var args []interface{}
 
 	if opt.bulkInsert {
+		builderState := builder
+		count := 0
+
 		for _, row := range data.rows {
 			value := make([]interface{}, 0)
 			for _, column := range data.columns {
-				value = append(value, row[column])
+				value = append(value, insertValue(row[column]))
 			}
+
 			builder = builder.Values(value...)
+			count++
+			if count > bulkInsertLimit {
+				query, args, err = builder.ToSql()
+				if err != nil {
+					break
+				}
+
+				_, err = tx.Exec(query, args...)
+				if err != nil {
+					break
+				}
+				count = 0
+				builder = builderState
+			}
 		}
 		query, args, err = builder.ToSql()
 		_, err = tx.Exec(query, args...)
@@ -162,14 +181,23 @@ func (fl FixtureLoader) loadFixtureFromData(data data, opt option) error {
 		for _, row := range data.rows {
 			value := make([]interface{}, 0)
 			for _, column := range data.columns {
-				value = append(value, row[column])
+				value = append(value, insertValue(row[column]))
 			}
+
 			query, args, err = builder.Values(value...).ToSql()
+			if err != nil {
+				break
+			}
+
 			_, err = tx.Exec(query, args...)
+			if err != nil {
+				break
+			}
 		}
 	}
 
 	if err != nil {
+		err = errors.Wrap(err, "db insert error")
 		tx.TxRollback()
 		return err
 	}
