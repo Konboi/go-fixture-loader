@@ -4,11 +4,14 @@ import (
 	"encoding/csv"
 	"io"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 func (fx FixtureLoader) getDataFromCSV(file, format string) (data, error) {
 	f, err := os.Open(file)
 	if err != nil {
+		err = errors.Wrapf(err, "file: %s open error", file)
 		return data{}, err
 	}
 	defer f.Close()
@@ -20,6 +23,7 @@ func (fx FixtureLoader) getDataFromCSV(file, format string) (data, error) {
 
 	columns, err := reader.Read()
 	if err != nil {
+		err = errors.Wrapf(err, "file: %s read error", file)
 		return data{}, err
 	}
 

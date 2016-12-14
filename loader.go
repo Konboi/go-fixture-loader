@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/pkg/errors"
 	"github.com/shogo82148/txmanager"
 )
 
