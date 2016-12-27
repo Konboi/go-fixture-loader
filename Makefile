@@ -1,10 +1,6 @@
 TEST_FILE = $(shell glide novendor)
 VET_FILE = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-debug:
-
-	cd _example/ &&	go run create_ddl/create_ddl.go -d mysql -o sql/master.sql
-
 test: deps lint
 
 	go test -v ${TEST_FILE}

@@ -4,12 +4,15 @@ import (
 	"encoding/csv"
 	"io"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
-func (fx FixtureLoader) getDataFromCSV(file, format string) (data, error) {
+func (fx FixtureLoader) getDataFromCSV(file, format string) (Data, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return data{}, err
+		err = errors.Wrapf(err, "file: %s open error", file)
+		return Data{}, err
 	}
 	defer f.Close()
 
@@ -20,10 +23,11 @@ func (fx FixtureLoader) getDataFromCSV(file, format string) (data, error) {
 
 	columns, err := reader.Read()
 	if err != nil {
-		return data{}, err
+		err = errors.Wrapf(err, "file: %s read error", file)
+		return Data{}, err
 	}
 
-	data := data{columns: columns}
+	data := Data{columns: columns}
 	for {
 		row, err := reader.Read()
 

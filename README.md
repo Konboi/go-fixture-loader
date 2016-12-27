@@ -24,12 +24,15 @@ func main() {
 	}
 	defer db.Close()
 
-	opt := loader.Option{}
-    opt["delete"] = true
-    opt["update"] = true
+	opt := loader.NewOption(loader.MySQL)
+	opt.Update = true
+
+	opt := loader.NewOption(loader.MySQL)
+	opt.Update = true
+	opt.Delete = true
 	fl := loader.New(cnn, opt)
 
-	err = fl.LoadFixture("./_data/item.json", opt)
+	err = fl.LoadFixture("./_data/item.json", nil)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
