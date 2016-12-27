@@ -7,10 +7,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func (fx FixtureLoader) getDataFromYAML(file string) (data, error) {
+func (fx FixtureLoader) getDataFromYAML(file string) (Data, error) {
 	f, err := ioutil.ReadFile(file)
 	if err != nil {
-		return data{}, err
+		return Data{}, err
 	}
 
 	var yamlData interface{}
@@ -23,7 +23,7 @@ func (fx FixtureLoader) getDataFromYAML(file string) (data, error) {
 	}
 
 	if len(rows) < 1 {
-		return data{}, fmt.Errorf("[error] %s is data empty", file)
+		return Data{}, fmt.Errorf("[error] %s is data empty", file)
 	}
 
 	columns := make([]string, 0)
@@ -31,7 +31,7 @@ func (fx FixtureLoader) getDataFromYAML(file string) (data, error) {
 		columns = append(columns, key)
 	}
 
-	data := data{
+	data := Data{
 		columns: columns,
 		rows:    rows,
 	}

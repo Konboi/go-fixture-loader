@@ -31,8 +31,8 @@ func TestLoadFixrure(t *testing.T) {
 		t.Fatal("[error] create table", err.Error())
 	}
 
-	fl := New(db, Option{})
-	err = fl.LoadFixture("_data/item.csv", Option{})
+	fl := New(db, NewOption(""))
+	err = fl.LoadFixture("_data/item.csv", nil)
 	if err != nil {
 		t.Fatal("[error] load fixture:", err.Error())
 	}
@@ -67,7 +67,7 @@ func TestLoadFixrure(t *testing.T) {
 	}
 
 	t.Run("adding yaml", func(t *testing.T) {
-		fl.LoadFixture("_data/item.yaml", Option{})
+		fl.LoadFixture("_data/item.yaml", nil)
 
 		var count int
 		row := db.QueryRow("SELECT COUNT(*) FROM item")
@@ -101,7 +101,7 @@ func TestLoadFixrure(t *testing.T) {
 	})
 
 	t.Run("adding json", func(t *testing.T) {
-		fl.LoadFixture("_data/item.json", Option{})
+		fl.LoadFixture("_data/item.json", nil)
 
 		var count int
 		row := db.QueryRow("SELECT COUNT(*) FROM item")
