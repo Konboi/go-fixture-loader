@@ -26,7 +26,7 @@ func TestLoadFixrure(t *testing.T) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("CREATE TABLE item (id INTEGER PRIMARY KEY, name VARCHAR(255));")
+	_, err = db.Exec("CREATE TABLE item (id INTEGER PRIMARY KEY, name VARCHAR(255)) DEFAULT CHARACTER SET utf8mb4;")
 	if err != nil {
 		t.Fatal("[error] create table", err.Error())
 	}
@@ -63,7 +63,7 @@ func TestLoadFixrure(t *testing.T) {
 	}
 
 	if items[0].name != "エクスカリバー" {
-		t.Fatal("[error] item.csv load error: %v", items)
+		t.Fatalf("[error] item.csv load error: %v", items)
 	}
 
 	t.Run("adding yaml", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestLoadFixrure(t *testing.T) {
 		}
 
 		if items[3].name != "ホーリーランス" {
-			t.Fatal("[error] item.csv load error: %v", items)
+			t.Fatalf("[error] item.csv load error: %v", items)
 		}
 
 	})
@@ -129,7 +129,7 @@ func TestLoadFixrure(t *testing.T) {
 		}
 
 		if items[5].name != "木刀" {
-			t.Fatal("[error] item.csv load error: %v", items)
+			t.Fatalf("[error] item.csv load error: %v", items)
 		}
 	})
 }
@@ -139,6 +139,18 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("[error] setup test db: %s", err.Error())
 	}
+
+	db, err := sql.Open("mysql", mysqld.DSN(mysqltest.WithDbname("")))
+	if err != nil {
+		log.Fatalf("[error] connect db %s :%s", mysqld.DSN(mysqltest.WithDbname("")), err.Error())
+	}
+
+	// MySQL over 5.7 not exists test database
+	_, err = db.Exec("CREATE DATABASE IF NOT EXISTS test")
+	if err != nil {
+		log.Fatalf("[error] create test db %s", err.Error())
+	}
+
 	testMysqld = mysqld
 	defer mysqld.Stop()
 

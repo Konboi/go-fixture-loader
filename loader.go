@@ -113,7 +113,7 @@ func (fl FixtureLoader) LoadFixture(value interface{}, opt *LoadOption) error {
 		basename := path.Base(file)
 		match := baseNameRegexp.FindStringSubmatch(basename)
 		if len(match) < 2 {
-			fmt.Errorf("Please check file name")
+			return fmt.Errorf("Please check file name")
 		}
 		opt.Table = match[1]
 	}
@@ -121,7 +121,7 @@ func (fl FixtureLoader) LoadFixture(value interface{}, opt *LoadOption) error {
 	if opt.Format == "" {
 		match := formatRegexp.FindStringSubmatch(file)
 		if len(match) < 2 {
-			fmt.Errorf("Please check file format")
+			return fmt.Errorf("Please check file format")
 		}
 		opt.Format = match[1]
 	}
@@ -147,8 +147,6 @@ func (fl FixtureLoader) LoadFixture(value interface{}, opt *LoadOption) error {
 }
 
 func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
-	builder := squirrel.Insert(opt.Table).Columns(data.columns...)
-
 	if opt.Update && opt.Ignore {
 		log.Fatalln("`update` and `ignore` are exclusive option")
 	}
@@ -168,19 +166,22 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 		tx.Exec(query, args...)
 	}
 
+	rows := make([][]interface{}, 0, len(data.rows))
+	for _, row := range data.rows {
+		value := make([]interface{}, 0)
+		for _, column := range data.columns {
+			value = append(value, insertValue(row[column]))
+		}
+		rows = append(rows, value)
+	}
+
 	var query string
 	var args []interface{}
 
+	builder := squirrel.Insert(opt.Table).Columns(data.columns...)
 	if fl.Option.BulkInsert {
-		builderState := builder
 		count := 0
-
-		for _, row := range data.rows {
-			value := make([]interface{}, 0)
-			for _, column := range data.columns {
-				value = append(value, insertValue(row[column]))
-			}
-
+		for _, value := range rows {
 			builder = builder.Values(value...)
 			count++
 			if count > bulkInsertLimit {
@@ -194,18 +195,13 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 					break
 				}
 				count = 0
-				builder = builderState
+				builder = squirrel.Insert(opt.Table).Columns(data.columns...)
 			}
 		}
 		query, args, err = builder.ToSql()
 		_, err = tx.Exec(query, args...)
 	} else {
-		for _, row := range data.rows {
-			value := make([]interface{}, 0)
-			for _, column := range data.columns {
-				value = append(value, insertValue(row[column]))
-			}
-
+		for _, value := range rows {
 			query, args, err = builder.Values(value...).ToSql()
 			if err != nil {
 				break
