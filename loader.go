@@ -178,7 +178,12 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 	var query string
 	var args []interface{}
 
-	builder := squirrel.Insert(opt.Table).Columns(data.columns...)
+	quotedColumns := make([]string, len(data.columns))
+	for i, c := range data.columns {
+		quotedColumns[i] = quote(c)
+	}
+
+	builder := squirrel.Insert(quote(opt.Table)).Columns(quotedColumns...)
 	if fl.Option.BulkInsert {
 		count := 0
 		for _, value := range rows {
@@ -243,4 +248,9 @@ func insertValue(value string) interface{} {
 	}
 
 	return value
+}
+
+// TODO: Make it changeable for each driver
+func quote(s string) string {
+	return fmt.Sprintf("`%s`", s)
 }
