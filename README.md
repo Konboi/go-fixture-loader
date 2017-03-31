@@ -26,9 +26,6 @@ func main() {
 
 	opt := loader.NewOption(loader.MySQL)
 	opt.Update = true
-
-	opt := loader.NewOption(loader.MySQL)
-	opt.Update = true
 	opt.Delete = true
 	fl := loader.New(cnn, opt)
 
