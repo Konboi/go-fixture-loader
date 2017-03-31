@@ -1,0 +1,22 @@
+hash: 1bd4fdb72b24c27699362b0099b7055753ad6e20781d6fa0b1cd5f5237caf301
+updated: 2017-03-31T09:19:31.100254536+09:00
+imports:
+- name: github.com/lann/builder
+  version: f22ce00fd9394014049dad11c244859432bd6820
+- name: github.com/lann/ps
+  version: 62de8c46ede02a7675c4c79c84883eb164cb71e3
+- name: github.com/lestrrat/go-test-mysqld
+  version: efcad5e3def274f89483d96eec81e48f683ecd6e
+- name: github.com/Masterminds/squirrel
+  version: 20f192218cf52a73397fa2df45bdda720f3e47c8
+- name: github.com/pkg/errors
+  version: ff09b135c25aae272398c51a07235b90a75aa4f0
+- name: github.com/shogo82148/txmanager
+  version: c4895d11d9944bdad30c380c1b122c77d97c0dc8
+- name: gopkg.in/yaml.v2
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+testImports:
+- name: github.com/go-sql-driver/mysql
+  version: 9dee4ca50b83acdf57a35fb9e6fb4be640afa2f3
+- name: github.com/lestrrat/go-tcputil
+  version: 3cae7c8432aeb817399f001e0db3f5bb04e8b8a6
