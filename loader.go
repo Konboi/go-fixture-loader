@@ -158,7 +158,7 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 	defer tx.TxFinish()
 
 	if opt.Delete {
-		query, args, err := squirrel.Delete(opt.Table).ToSql()
+		query, args, err := squirrel.Delete(quote(opt.Table)).ToSql()
 		if err != nil {
 			tx.TxRollback()
 			return err
@@ -200,7 +200,7 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 					break
 				}
 				count = 0
-				builder = squirrel.Insert(opt.Table).Columns(data.columns...)
+				builder = squirrel.Insert(quote(opt.Table)).Columns(quotedColumns...)
 			}
 		}
 		query, args, err = builder.ToSql()
