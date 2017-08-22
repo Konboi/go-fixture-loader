@@ -21,7 +21,7 @@ type FixtureLoader struct {
 	ignore     bool
 	delete     bool
 	bulkInsert bool
-	// Load Iption
+	// Load Option
 	table  string
 	format string
 }
