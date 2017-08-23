@@ -2,12 +2,16 @@ package loader
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lestrrat/go-test-mysqld"
+	"github.com/pkg/errors"
+	"github.com/shogo82148/txmanager"
 )
 
 var (
@@ -17,6 +21,156 @@ var (
 type item struct {
 	id   int
 	name string
+}
+
+func TestNew(t *testing.T) {
+	type Input struct {
+		Driver  string
+		Options []Option
+	}
+
+	type Output struct {
+		Loader FixtureLoader
+		Error  error
+	}
+
+	type Test struct {
+		Title  string
+		Input  Input
+		Output Output
+	}
+
+	tests := []Test{
+		Test{
+			Title: "success: default config",
+			Input: Input{
+				Driver:  MySQL,
+				Options: []Option{},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager: txmanager.NewDB(nil),
+					driver:    MySQL,
+				},
+				Error: nil,
+			},
+		},
+		Test{
+			Title: "success: update option",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					Update(true),
+				},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager: txmanager.NewDB(nil),
+					driver:    MySQL,
+					update:    true,
+				},
+				Error: nil,
+			},
+		},
+		Test{
+			Title: "success: delete option",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					Delete(true),
+				},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager: txmanager.NewDB(nil),
+					driver:    MySQL,
+					delete:    true,
+				},
+				Error: nil,
+			},
+		},
+		Test{
+			Title: "success: use sqlite and delete option",
+			Input: Input{
+				Driver: "sqlite",
+				Options: []Option{
+					Delete(true),
+				},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager: txmanager.NewDB(nil),
+					driver:    "sqlite",
+					delete:    true,
+				},
+				Error: nil,
+			},
+		},
+		Test{
+			Title: "success: update and bulk insert option",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					Update(true),
+					BulkInsert(true),
+				},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager:  txmanager.NewDB(nil),
+					driver:     MySQL,
+					update:     true,
+					bulkInsert: true,
+				},
+				Error: nil,
+			},
+		},
+		Test{
+			Title: "error: update support only mysql",
+			Input: Input{
+				Driver: "sqlite",
+				Options: []Option{
+					Update(true),
+				},
+			},
+			Output: Output{
+				Error: fmt.Errorf("error `update` option only support mysql"),
+			},
+		},
+		Test{
+			Title: "error: set update option with ignore option",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					Update(true),
+					Ignore(true),
+				},
+			},
+			Output: Output{
+				Error: fmt.Errorf("error `update` and `ignore` are exclusive option"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Title, func(t *testing.T) {
+			l, err := New(nil, test.Input.Driver, test.Input.Options...)
+			if test.Output.Error != nil {
+				if errors.Cause(err).Error() != test.Output.Error.Error() {
+					t.Fatalf("error invalid error message. got:%s want:%s", errors.Cause(err).Error(), test.Output.Error.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal("error new", err.Error())
+			}
+
+			if !reflect.DeepEqual(l, test.Output.Loader) {
+				t.Fatalf("error invalid options. got:%v want:%v", l, test.Output.Loader)
+			}
+		})
+	}
 }
 
 func TestLoadFixrure(t *testing.T) {
@@ -31,107 +185,129 @@ func TestLoadFixrure(t *testing.T) {
 		t.Fatal("[error] create table", err.Error())
 	}
 
-	fl := New(db, NewOption(""))
-	err = fl.LoadFixture("_data/item.csv", nil)
+	type Input struct {
+		File    string
+		Options []Option
+	}
+
+	type Test struct {
+		Title  string
+		Input  Input
+		Output []item
+	}
+
+	tests := []Test{
+		Test{
+			Title: "load csv",
+			Input: Input{
+				File:    "_data/item.csv",
+				Options: []Option{},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバー"},
+				item{id: 2, name: "村正"},
+			},
+		},
+		Test{
+			Title: "load yml",
+			Input: Input{
+				File:    "_data/item.yaml",
+				Options: []Option{},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバー"},
+				item{id: 2, name: "村正"},
+				item{id: 3, name: "ウィザードロッド"},
+				item{id: 4, name: "ホーリーランス"},
+			},
+		},
+		Test{
+			Title: "load json",
+			Input: Input{
+				File:    "_data/item.json",
+				Options: []Option{},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバー"},
+				item{id: 2, name: "村正"},
+				item{id: 3, name: "ウィザードロッド"},
+				item{id: 4, name: "ホーリーランス"},
+				item{id: 5, name: "グラディウス"},
+				item{id: 6, name: "木刀"},
+			},
+		},
+		Test{
+			Title: "load csv with delete option",
+			Input: Input{
+				File: "_data/item.csv",
+				Options: []Option{
+					Delete(true),
+				},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバー"},
+				item{id: 2, name: "村正"},
+			},
+		},
+		Test{
+			Title: "load csv with update and table option",
+			Input: Input{
+				File: "_data/item_update.csv",
+				Options: []Option{
+					Update(true),
+					Table("item"),
+				},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバーNew"},
+				item{id: 2, name: "村正New"},
+			},
+		},
+	}
+
+	fl, err := New(db, MySQL)
 	if err != nil {
-		t.Fatal("[error] load fixture:", err.Error())
+		t.Fatal("[error] new ", err.Error())
 	}
 
-	var count int
-	row := db.QueryRow("SELECT COUNT(*) FROM item")
-	err = row.Scan(&count)
-	if err != nil {
-		t.Fatal("[error] select error:", err.Error())
-	}
-
-	if count != 2 {
-		t.Fatal("[error] item.csv load error")
-	}
-
-	items := make([]item, 0)
-	rows, err := db.Query("SELECT * FROM item ORDER BY id")
-	if err != nil {
-		t.Fatal("[error] select error:", err.Error())
-	}
-	for rows.Next() {
-		item := item{}
-		err = rows.Scan(&item.id, &item.name)
-		if err != nil {
-			t.Fatal("[error] scan rows:", err.Error())
-		}
-		items = append(items, item)
-	}
-
-	if items[0].name != "エクスカリバー" {
-		t.Fatalf("[error] item.csv load error: %v", items)
-	}
-
-	t.Run("adding yaml", func(t *testing.T) {
-		fl.LoadFixture("_data/item.yaml", nil)
-
-		var count int
-		row := db.QueryRow("SELECT COUNT(*) FROM item")
-		err = row.Scan(&count)
-		if err != nil {
-			t.Fatal("[error] select error:", err.Error())
-		}
-
-		if count != 4 {
-			t.Fatal("[error] item.json load error")
-		}
-
-		items := make([]item, 0)
-		rows, err := db.Query("SELECT * FROM item ORDER BY id")
-		if err != nil {
-			t.Fatal("[error] select error:", err.Error())
-		}
-		for rows.Next() {
-			item := item{}
-			err = rows.Scan(&item.id, &item.name)
-			if err != nil {
-				t.Fatal("[error] scan rows:", err.Error())
+	for _, test := range tests {
+		t.Run(test.Title, func(t *testing.T) {
+			if err := fl.LoadFixture(test.Input.File, test.Input.Options...); err != nil {
+				t.Fatal("[error] load fixture:", err.Error())
 			}
-			items = append(items, item)
-		}
 
-		if items[3].name != "ホーリーランス" {
-			t.Fatalf("[error] item.csv load error: %v", items)
-		}
-
-	})
-
-	t.Run("adding json", func(t *testing.T) {
-		fl.LoadFixture("_data/item.json", nil)
-
-		var count int
-		row := db.QueryRow("SELECT COUNT(*) FROM item")
-		err = row.Scan(&count)
-		if err != nil {
-			t.Fatal("[error] select error:", err.Error())
-		}
-
-		if count != 6 {
-			t.Fatal("[error] item.json load error")
-		}
-
-		items := make([]item, 0)
-		rows, err := db.Query("SELECT * FROM item ORDER BY id")
-		if err != nil {
-			t.Fatal("[error] select error:", err.Error())
-		}
-		for rows.Next() {
-			item := item{}
-			err = rows.Scan(&item.id, &item.name)
-			if err != nil {
-				t.Fatal("[error] scan rows:", err.Error())
+			var count int
+			row := db.QueryRow("SELECT COUNT(*) FROM item")
+			if err := row.Scan(&count); err != nil {
+				t.Fatal("[error] select error:", err.Error())
 			}
-			items = append(items, item)
-		}
 
-		if items[5].name != "木刀" {
-			t.Fatalf("[error] item.csv load error: %v", items)
-		}
-	})
+			if len(test.Output) != count {
+				t.Fatalf("error load data. want:%d got:%d", len(test.Output), count)
+			}
+
+			items := []item{}
+			rows, err := db.Query("select id, name from item")
+			if err != nil {
+				t.Fatal("[error] select error:", err.Error())
+			}
+
+			for rows.Next() {
+				i := item{}
+				if err := rows.Scan(&i.id, &i.name); err != nil {
+					if err != sql.ErrNoRows {
+						t.Fatal("error scan data.", err.Error())
+					}
+				}
+
+				items = append(items, i)
+			}
+
+			if !reflect.DeepEqual(test.Output, items) {
+				t.Fatalf("error load data. want:%v got:%v", test.Output, items)
+			}
+		})
+	}
 }
 
 func TestMain(m *testing.M) {

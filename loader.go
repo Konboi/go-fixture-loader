@@ -15,26 +15,19 @@ import (
 
 // FixtureLoader is XXX
 type FixtureLoader struct {
-	Option    *Option
-	Txmanager txmanager.DB
+	driver     string
+	txManager  txmanager.DB
+	update     bool
+	ignore     bool
+	delete     bool
+	bulkInsert bool
+	// Load Option
+	table  string
+	format string
 }
 
-// Option is loader global option
-type Option struct {
-	Update     bool
-	Ignore     bool
-	Delete     bool
-	BulkInsert bool
-}
-
-// LoadOption is overlide option for loading
-type LoadOption struct {
-	Table  string
-	Format string
-	Update bool
-	Ignore bool
-	Delete bool
-}
+// Option is set load option
+type Option func(*FixtureLoader) error
 
 // Data is insert common data type
 type Data struct {
@@ -58,48 +51,101 @@ func init() {
 	formatRegexp = regexp.MustCompile(`\.([^.]*$)`)
 }
 
-// NewOption return default option
-func NewOption(driver string) *Option {
-	bulkInsert := false
+// Update is update data when exists duplicate data
+func Update(update bool) Option {
+	return func(f *FixtureLoader) error {
+		if update && f.ignore {
+			return errors.New("error `update` and `ignore` are exclusive option")
+		}
 
-	if driver == MySQL {
-		bulkInsert = true
+		if update && f.driver != MySQL {
+			return errors.New("error `update` option only support mysql")
+		}
+
+		f.update = update
+
+		return nil
 	}
+}
 
-	return &Option{
-		BulkInsert: bulkInsert,
+// Ignore skip insert when exists duplicate data
+func Ignore(ignore bool) Option {
+	return func(f *FixtureLoader) error {
+		if f.update && ignore {
+			return errors.New("error `update` and `ignore` are exclusive option")
+		}
+
+		f.ignore = ignore
+
+		return nil
+	}
+}
+
+// Delete is delete all data before insert data.
+func Delete(delete bool) Option {
+	return func(f *FixtureLoader) error {
+		f.delete = delete
+		return nil
+	}
+}
+
+// BulkInsert is insert data multi
+func BulkInsert(bulk bool) Option {
+	return func(f *FixtureLoader) error {
+		f.bulkInsert = bulk
+		return nil
+	}
+}
+
+// Table set insert table name
+func Table(table string) Option {
+	return func(f *FixtureLoader) error {
+		f.table = table
+
+		return nil
+	}
+}
+
+// Format set insert file format
+func Format(format string) Option {
+	return func(f *FixtureLoader) error {
+		f.format = format
+
+		return nil
 	}
 }
 
 // New is return FixtureLoader
-func New(db *sql.DB, opt *Option) *FixtureLoader {
+func New(db *sql.DB, driver string, options ...Option) (FixtureLoader, error) {
 	txManager := txmanager.NewDB(db)
-	if opt == nil {
-		opt = NewOption("")
+
+	fl := FixtureLoader{
+		txManager: txManager,
+		driver:    driver,
 	}
 
-	return &FixtureLoader{
-		Option:    opt,
-		Txmanager: txManager,
-	}
-}
-
-// LoadFixture is load fixture
-func (fl FixtureLoader) LoadFixture(value interface{}, opt *LoadOption) error {
-	if opt == nil {
-		opt = &LoadOption{
-			Update: fl.Option.Update,
-			Delete: fl.Option.Delete,
-			Ignore: fl.Option.Ignore,
+	for _, option := range options {
+		if err := option(&fl); err != nil {
+			return FixtureLoader{}, errors.Wrap(err, "error invalid option")
 		}
 	}
 
-	if opt.Update && opt.Ignore {
-		log.Fatalf("update and ignore are exclusive argument")
+	return fl, nil
+}
+
+// LoadFixture is load fixture
+func (fl FixtureLoader) LoadFixture(value interface{}, options ...Option) error {
+
+	f := fl
+
+	for _, option := range options {
+		if err := option(&f); err != nil {
+			return errors.Wrap(err, "error invalid option")
+		}
 	}
 
 	if v, ok := value.(Data); ok {
-		return fl.loadFixtureFromData(v, opt)
+		return f.loadFixtureFromData(v, options...)
 	}
 
 	var file string
@@ -109,56 +155,59 @@ func (fl FixtureLoader) LoadFixture(value interface{}, opt *LoadOption) error {
 		log.Fatalf("%v is not file string", value)
 	}
 
-	if opt.Table == "" {
+	if f.table == "" {
 		basename := path.Base(file)
 		match := baseNameRegexp.FindStringSubmatch(basename)
 		if len(match) < 2 {
 			return fmt.Errorf("Please check file name")
 		}
-		opt.Table = match[1]
+		f.table = match[1]
 	}
 
-	if opt.Format == "" {
+	if f.format == "" {
 		match := formatRegexp.FindStringSubmatch(file)
 		if len(match) < 2 {
 			return fmt.Errorf("Please check file format")
 		}
-		opt.Format = match[1]
+		f.format = match[1]
 	}
 
 	var data Data
 	var err error
 
-	if opt.Format == "csv" || opt.Format == "tsv" {
-		data, err = fl.getDataFromCSV(file, opt.Format)
-	} else if opt.Format == "json" {
-		data, err = fl.getDataFromJSON(file)
-	} else if opt.Format == "yaml" || opt.Format == "yml" {
-		data, err = fl.getDataFromYAML(file)
+	if f.format == "csv" || f.format == "tsv" {
+		data, err = f.getDataFromCSV(file, f.format)
+	} else if f.format == "json" {
+		data, err = f.getDataFromJSON(file)
+	} else if f.format == "yaml" || f.format == "yml" {
+		data, err = f.getDataFromYAML(file)
 	} else {
-		err = fmt.Errorf("not support format: %s", opt.Format)
+		err = fmt.Errorf("not support format: %s", f.format)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	return fl.LoadFixture(data, opt)
+	return f.LoadFixture(data, options...)
 }
 
-func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
-	if opt.Update && opt.Ignore {
-		log.Fatalln("`update` and `ignore` are exclusive option")
+func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error {
+	f := fl
+	for _, option := range options {
+		if err := option(&f); err != nil {
+			return errors.Wrap(err, "error invalid option")
+		}
 	}
 
-	tx, err := fl.Txmanager.TxBegin()
+	tx, err := f.txManager.TxBegin()
 	if err != nil {
 		return err
 	}
 	defer tx.TxFinish()
 
-	if opt.Delete {
-		query, args, err := squirrel.Delete(quote(opt.Table)).ToSql()
+	if f.delete {
+		query, args, err := squirrel.Delete(quote(f.table)).ToSql()
 		if err != nil {
 			tx.TxRollback()
 			return err
@@ -183,8 +232,12 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 		quotedColumns[i] = quote(c)
 	}
 
-	builder := squirrel.Insert(quote(opt.Table)).Columns(quotedColumns...)
-	if fl.Option.BulkInsert {
+	builder := squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
+	if f.update {
+		builder = buildOnDuplicate(quotedColumns, builder)
+	}
+
+	if f.bulkInsert {
 		count := 0
 		for _, value := range rows {
 			builder = builder.Values(value...)
@@ -200,7 +253,7 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 					break
 				}
 				count = 0
-				builder = squirrel.Insert(quote(opt.Table)).Columns(quotedColumns...)
+				builder = squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
 			}
 		}
 		query, args, err = builder.ToSql()
@@ -225,8 +278,7 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, opt *LoadOption) error {
 		return err
 	}
 
-	err = tx.TxCommit()
-	if err != nil {
+	if err := tx.TxCommit(); err != nil {
 		return err
 	}
 
