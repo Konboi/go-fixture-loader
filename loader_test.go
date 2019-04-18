@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/lestrrat/go-test-mysqld"
+	mysqltest "github.com/lestrrat-go/test-mysqld"
 	"github.com/pkg/errors"
 	"github.com/shogo82148/txmanager"
 )
