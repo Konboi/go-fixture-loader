@@ -1,6 +1,7 @@
 language: go
 go:
-  - 1.11.x
+  - 1.11
+  - tip
 
 before_script:
   - sudo cp /etc/mysql/my.cnf /usr/share/mysql/my-default.cnf
