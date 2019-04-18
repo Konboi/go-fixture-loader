@@ -263,6 +263,17 @@ func TestLoadFixrure(t *testing.T) {
 				item{id: 2, name: "村正New"},
 			},
 		},
+		Test{
+			Title: "load empty csv with delete and table option",
+			Input: Input{
+				File: "_data/zero.csv",
+				Options: []Option{
+					Delete(true),
+					Table("item"),
+				},
+			},
+			Output: []item{},
+		},
 	}
 
 	fl, err := New(db, MySQL)

@@ -224,6 +224,13 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 		rows = append(rows, value)
 	}
 
+	if len(rows) == 0 {
+		if err := tx.TxCommit(); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	var query string
 	var args []interface{}
 
