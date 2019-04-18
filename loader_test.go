@@ -191,9 +191,10 @@ func TestLoadFixrure(t *testing.T) {
 	}
 
 	type Test struct {
-		Title  string
-		Input  Input
-		Output []item
+		Title       string
+		InitQueries []string
+		Input       Input
+		Output      []item
 	}
 
 	tests := []Test{
@@ -215,8 +216,6 @@ func TestLoadFixrure(t *testing.T) {
 				Options: []Option{},
 			},
 			Output: []item{
-				item{id: 1, name: "エクスカリバー"},
-				item{id: 2, name: "村正"},
 				item{id: 3, name: "ウィザードロッド"},
 				item{id: 4, name: "ホーリーランス"},
 			},
@@ -228,16 +227,35 @@ func TestLoadFixrure(t *testing.T) {
 				Options: []Option{},
 			},
 			Output: []item{
-				item{id: 1, name: "エクスカリバー"},
-				item{id: 2, name: "村正"},
-				item{id: 3, name: "ウィザードロッド"},
-				item{id: 4, name: "ホーリーランス"},
 				item{id: 5, name: "グラディウス"},
 				item{id: 6, name: "木刀"},
 			},
 		},
 		Test{
+			Title: "load csv. add item",
+			InitQueries: []string{
+				"INSERT INTO item VALUES(3,'ウィザードロッド');",
+				"INSERT INTO item VALUES(4,'ホーリーランス');",
+			},
+			Input: Input{
+				File:    "_data/item.csv",
+				Options: []Option{},
+			},
+			Output: []item{
+				item{id: 1, name: "エクスカリバー"},
+				item{id: 2, name: "村正"},
+				item{id: 3, name: "ウィザードロッド"},
+				item{id: 4, name: "ホーリーランス"},
+			},
+		},
+		Test{
 			Title: "load csv with delete option",
+			InitQueries: []string{
+				"INSERT INTO item VALUES(1,'エクスカリバー');",
+				"INSERT INTO item VALUES(2,'村正');",
+				"INSERT INTO item VALUES(3,'ウィザードロッド');",
+				"INSERT INTO item VALUES(4,'ホーリーランス');",
+			},
 			Input: Input{
 				File: "_data/item.csv",
 				Options: []Option{
@@ -251,6 +269,10 @@ func TestLoadFixrure(t *testing.T) {
 		},
 		Test{
 			Title: "load csv with update and table option",
+			InitQueries: []string{
+				"INSERT INTO item VALUES(1,'エクスカリバー');",
+				"INSERT INTO item VALUES(2,'村正');",
+			},
 			Input: Input{
 				File: "_data/item_update.csv",
 				Options: []Option{
@@ -265,8 +287,11 @@ func TestLoadFixrure(t *testing.T) {
 		},
 		Test{
 			Title: "load empty csv with delete and table option",
+			InitQueries: []string{
+				"INSERT INTO item VALUES(1,'エクスカリバー');",
+			},
 			Input: Input{
-				File: "_data/item_empty.csv",
+				File: "_data/zero.csv",
 				Options: []Option{
 					Delete(true),
 					Table("item"),
@@ -276,8 +301,11 @@ func TestLoadFixrure(t *testing.T) {
 		},
 		Test{
 			Title: "load empty csv with delete and buik insert and table option",
+			InitQueries: []string{
+				"INSERT INTO item VALUES(1,'エクスカリバー');",
+			},
 			Input: Input{
-				File: "_data/item_empty.csv",
+				File: "_data/zero.csv",
 				Options: []Option{
 					Delete(true),
 					BulkInsert(true),
@@ -295,6 +323,16 @@ func TestLoadFixrure(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Title, func(t *testing.T) {
+			defer db.Exec("TRUNCATE TABLE item;")
+
+			if len(test.InitQueries) != 0 {
+				for _, q := range test.InitQueries {
+					if _, err := db.Exec(q); err != nil {
+						t.Fatal("[error] init query:", err.Error())
+					}
+				}
+			}
+
 			if err := fl.LoadFixture(test.Input.File, test.Input.Options...); err != nil {
 				t.Fatal("[error] load fixture:", err.Error())
 			}
