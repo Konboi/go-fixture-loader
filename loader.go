@@ -237,13 +237,31 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 		builder = buildOnDuplicate(quotedColumns, builder)
 	}
 
-	if f.bulkInsert {
-		count := 0
-		for _, value := range rows {
-			builder = builder.Values(value...)
-			count++
-			if count > bulkInsertLimit {
-				query, args, err = builder.ToSql()
+	if 0 < len(rows) {
+		if f.bulkInsert {
+			count := 0
+			for _, value := range rows {
+				builder = builder.Values(value...)
+				count++
+				if count > bulkInsertLimit {
+					query, args, err = builder.ToSql()
+					if err != nil {
+						break
+					}
+
+					_, err = tx.Exec(query, args...)
+					if err != nil {
+						break
+					}
+					count = 0
+					builder = squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
+				}
+			}
+			query, args, err = builder.ToSql()
+			_, err = tx.Exec(query, args...)
+		} else {
+			for _, value := range rows {
+				query, args, err = builder.Values(value...).ToSql()
 				if err != nil {
 					break
 				}
@@ -252,22 +270,6 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 				if err != nil {
 					break
 				}
-				count = 0
-				builder = squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
-			}
-		}
-		query, args, err = builder.ToSql()
-		_, err = tx.Exec(query, args...)
-	} else {
-		for _, value := range rows {
-			query, args, err = builder.Values(value...).ToSql()
-			if err != nil {
-				break
-			}
-
-			_, err = tx.Exec(query, args...)
-			if err != nil {
-				break
 			}
 		}
 	}
