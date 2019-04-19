@@ -7,3 +7,4 @@ test: lint
 lint:
 
 	go tool vet -all -printfuncs=Criticalf,Infof,Warningf,Debugf,Tracef ${VET_FILE}
+	golint -set_exit_status ./...
