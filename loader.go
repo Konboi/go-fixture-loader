@@ -215,6 +215,13 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 		tx.Exec(query, args...)
 	}
 
+	if len(data.rows) == 0 {
+		if err := tx.TxCommit(); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	rows := make([][]interface{}, 0, len(data.rows))
 	for _, row := range data.rows {
 		value := make([]interface{}, 0)
@@ -222,13 +229,6 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 			value = append(value, insertValue(row[column]))
 		}
 		rows = append(rows, value)
-	}
-
-	if len(rows) == 0 {
-		if err := tx.TxCommit(); err != nil {
-			return err
-		}
-		return nil
 	}
 
 	var query string
