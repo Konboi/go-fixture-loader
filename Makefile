@@ -1,4 +1,4 @@
-.PHONY: test lint deps
+.PHONY: test lint deps clean
 
 VET_FILE = $(shell find . -type f -name '*.go')
 
