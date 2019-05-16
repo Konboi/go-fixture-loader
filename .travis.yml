@@ -1,15 +1,10 @@
 language: go
 go:
-  - 1.7
-  - 1.8
+  - 1.11
   - tip
 
-before_install:
+before_script:
   - sudo cp /etc/mysql/my.cnf /usr/share/mysql/my-default.cnf
 
-install:
-  - go get -v github.com/Masterminds/glide
-  - cd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
-
 script:
-  - make test
+  - GO111MODULE=on make test

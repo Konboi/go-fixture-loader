@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/lestrrat/go-test-mysqld"
+	mysqltest "github.com/lestrrat-go/test-mysqld"
 	"github.com/pkg/errors"
 	"github.com/shogo82148/txmanager"
 )
@@ -262,6 +262,29 @@ func TestLoadFixrure(t *testing.T) {
 				item{id: 1, name: "エクスカリバーNew"},
 				item{id: 2, name: "村正New"},
 			},
+		},
+		Test{
+			Title: "load empty csv with delete and table option",
+			Input: Input{
+				File: "_data/zero.csv",
+				Options: []Option{
+					Delete(true),
+					Table("item"),
+				},
+			},
+			Output: []item{},
+		},
+		Test{
+			Title: "load empty csv with delete and bulk insert and table option",
+			Input: Input{
+				File: "_data/zero.csv",
+				Options: []Option{
+					Delete(true),
+					BulkInsert(true),
+					Table("item"),
+				},
+			},
+			Output: []item{},
 		},
 	}
 
