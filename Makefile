@@ -8,7 +8,7 @@ test: deps lint
 
 lint: deps
 
-	go tool vet -all -printfuncs=Criticalf,Infof,Warningf,Debugf,Tracef ${VET_FILE}
+	go vet -printfuncs=Criticalf,Infof,Warningf,Debugf,Tracef ${VET_FILE}
 	golint -set_exit_status ./...
 
 deps:
