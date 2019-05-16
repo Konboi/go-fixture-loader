@@ -1,6 +1,6 @@
 .PHONY: test lint deps clean
 
-VET_FILE = $(shell find . -type f -name '*.go')
+VET_FILE = $(shell find . -type f -name '*.go' | grep -v vendor)
 
 test: deps lint
 
@@ -8,7 +8,7 @@ test: deps lint
 
 lint: deps
 
-	go tool vet -all -printfuncs=Criticalf,Infof,Warningf,Debugf,Tracef ${VET_FILE}
+	go vet -printfuncs=Criticalf,Infof,Warningf,Debugf,Tracef ${VET_FILE}
 	golint -set_exit_status ./...
 
 deps:
