@@ -1,6 +1,6 @@
 .PHONY: test lint deps clean
 
-VET_FILE = $(shell find . -type f -name '*.go')
+VET_FILE = $(shell find . -type f -name '*.go' | grep -v vendor)
 
 test: deps lint
 
