@@ -22,8 +22,9 @@ type FixtureLoader struct {
 	delete     bool
 	bulkInsert bool
 	// Load Option
-	table  string
-	format string
+	table           string
+	format          string
+	bulkInsertLimit int
 }
 
 // Option is set load option
@@ -41,9 +42,9 @@ const (
 )
 
 var (
-	baseNameRegexp  *regexp.Regexp
-	formatRegexp    *regexp.Regexp
-	bulkInsertLimit = 2000
+	baseNameRegexp         *regexp.Regexp
+	formatRegexp           *regexp.Regexp
+	defaultBulkInsertLimit = 2000
 )
 
 func init() {
@@ -97,6 +98,14 @@ func BulkInsert(bulk bool) Option {
 	}
 }
 
+//  BulkInsertLimit is sets the rows limit of one bulkInsert, which is enabled when bulkInsert is true
+func BulkInsertLimit(bulkInsertLimit int) Option {
+	return func(f *FixtureLoader) error {
+		f.bulkInsertLimit = bulkInsertLimit
+		return nil
+	}
+}
+
 // Table set insert table name
 func Table(table string) Option {
 	return func(f *FixtureLoader) error {
@@ -120,8 +129,9 @@ func New(db *sql.DB, driver string, options ...Option) (FixtureLoader, error) {
 	txManager := txmanager.NewDB(db)
 
 	fl := FixtureLoader{
-		txManager: txManager,
-		driver:    driver,
+		txManager:       txManager,
+		driver:          driver,
+		bulkInsertLimit: defaultBulkInsertLimit,
 	}
 
 	for _, option := range options {
