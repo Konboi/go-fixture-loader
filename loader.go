@@ -259,7 +259,7 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 		for _, value := range rows {
 			builder = builder.Values(value...)
 			count++
-			if count > bulkInsertLimit {
+			if count > f.bulkInsertLimit {
 				query, args, err = builder.ToSql()
 				if err != nil {
 					break
