@@ -255,11 +255,9 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 	}
 
 	if f.bulkInsert {
-		count := 0
-		for _, value := range rows {
+		for i, value := range rows {
 			builder = builder.Values(value...)
-			count++
-			if count >= f.bulkInsertLimit {
+			if (i+1)%f.bulkInsertLimit == 0 {
 				query, args, err = builder.ToSql()
 				if err != nil {
 					break
@@ -269,12 +267,14 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 				if err != nil {
 					break
 				}
-				count = 0
 				builder = squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
 			}
 		}
-		query, args, err = builder.ToSql()
-		_, err = tx.Exec(query, args...)
+
+		if len(rows)%f.bulkInsertLimit != 0 {
+			query, args, err = builder.ToSql()
+			_, err = tx.Exec(query, args...)
+		}
 	} else {
 		for _, value := range rows {
 			query, args, err = builder.Values(value...).ToSql()
