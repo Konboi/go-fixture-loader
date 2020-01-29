@@ -22,8 +22,9 @@ type FixtureLoader struct {
 	delete     bool
 	bulkInsert bool
 	// Load Option
-	table  string
-	format string
+	table           string
+	format          string
+	bulkInsertLimit int
 }
 
 // Option is set load option
@@ -41,9 +42,9 @@ const (
 )
 
 var (
-	baseNameRegexp  *regexp.Regexp
-	formatRegexp    *regexp.Regexp
-	bulkInsertLimit = 2000
+	baseNameRegexp         *regexp.Regexp
+	formatRegexp           *regexp.Regexp
+	defaultBulkInsertLimit = 2000
 )
 
 func init() {
@@ -97,6 +98,17 @@ func BulkInsert(bulk bool) Option {
 	}
 }
 
+// BulkInsertLimit is sets the rows limit of one bulkInsert, which is enabled when bulkInsert is true
+func BulkInsertLimit(bulkInsertLimit int) Option {
+	return func(f *FixtureLoader) error {
+		if bulkInsertLimit == 0 {
+			return errors.New("error `bulkInsertLimit` is not allowed 0 value")
+		}
+		f.bulkInsertLimit = bulkInsertLimit
+		return nil
+	}
+}
+
 // Table set insert table name
 func Table(table string) Option {
 	return func(f *FixtureLoader) error {
@@ -120,8 +132,9 @@ func New(db *sql.DB, driver string, options ...Option) (FixtureLoader, error) {
 	txManager := txmanager.NewDB(db)
 
 	fl := FixtureLoader{
-		txManager: txManager,
-		driver:    driver,
+		txManager:       txManager,
+		driver:          driver,
+		bulkInsertLimit: defaultBulkInsertLimit,
 	}
 
 	for _, option := range options {
@@ -245,11 +258,9 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 	}
 
 	if f.bulkInsert {
-		count := 0
-		for _, value := range rows {
+		for i, value := range rows {
 			builder = builder.Values(value...)
-			count++
-			if count > bulkInsertLimit {
+			if (i+1)%f.bulkInsertLimit == 0 {
 				query, args, err = builder.ToSql()
 				if err != nil {
 					break
@@ -259,12 +270,14 @@ func (fl FixtureLoader) loadFixtureFromData(data Data, options ...Option) error 
 				if err != nil {
 					break
 				}
-				count = 0
 				builder = squirrel.Insert(quote(f.table)).Columns(quotedColumns...)
 			}
 		}
-		query, args, err = builder.ToSql()
-		_, err = tx.Exec(query, args...)
+
+		if len(rows)%f.bulkInsertLimit != 0 {
+			query, args, err = builder.ToSql()
+			_, err = tx.Exec(query, args...)
+		}
 	} else {
 		for _, value := range rows {
 			query, args, err = builder.Values(value...).ToSql()
