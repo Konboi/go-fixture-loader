@@ -308,6 +308,30 @@ func TestLoadFixrure(t *testing.T) {
 			},
 			Output: []item{},
 		},
+		Test{
+			Title: "load csv with bulkInsert/bulkInsertLimit option/rows number is the multiple of bulkInsertLimit",
+			Input: Input{
+				File: "_data/bulkinsert.csv",
+				Options: []Option{
+					Delete(true),
+					BulkInsert(true),
+					BulkInsertLimit(2),
+					Table("item"),
+				},
+			},
+			Output: []item{
+				item{id: 1, name: "item1"},
+				item{id: 2, name: "item2"},
+				item{id: 3, name: "item3"},
+				item{id: 4, name: "item4"},
+				item{id: 5, name: "item5"},
+				item{id: 6, name: "item6"},
+				item{id: 7, name: "item7"},
+				item{id: 8, name: "item8"},
+				item{id: 9, name: "item9"},
+				item{id: 10, name: "item10"},
+			},
+		},
 	}
 
 	fl, err := New(db, MySQL)
