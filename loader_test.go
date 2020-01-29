@@ -49,8 +49,9 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Loader: FixtureLoader{
-					txManager: txmanager.NewDB(nil),
-					driver:    MySQL,
+					txManager:       txmanager.NewDB(nil),
+					driver:          MySQL,
+					bulkInsertLimit: defaultBulkInsertLimit,
 				},
 				Error: nil,
 			},
@@ -65,9 +66,10 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Loader: FixtureLoader{
-					txManager: txmanager.NewDB(nil),
-					driver:    MySQL,
-					update:    true,
+					txManager:       txmanager.NewDB(nil),
+					driver:          MySQL,
+					update:          true,
+					bulkInsertLimit: defaultBulkInsertLimit,
 				},
 				Error: nil,
 			},
@@ -82,9 +84,10 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Loader: FixtureLoader{
-					txManager: txmanager.NewDB(nil),
-					driver:    MySQL,
-					delete:    true,
+					txManager:       txmanager.NewDB(nil),
+					driver:          MySQL,
+					delete:          true,
+					bulkInsertLimit: defaultBulkInsertLimit,
 				},
 				Error: nil,
 			},
@@ -99,9 +102,10 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Loader: FixtureLoader{
-					txManager: txmanager.NewDB(nil),
-					driver:    "sqlite",
-					delete:    true,
+					txManager:       txmanager.NewDB(nil),
+					driver:          "sqlite",
+					delete:          true,
+					bulkInsertLimit: defaultBulkInsertLimit,
 				},
 				Error: nil,
 			},
@@ -117,10 +121,11 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Loader: FixtureLoader{
-					txManager:  txmanager.NewDB(nil),
-					driver:     MySQL,
-					update:     true,
-					bulkInsert: true,
+					txManager:       txmanager.NewDB(nil),
+					driver:          MySQL,
+					update:          true,
+					bulkInsert:      true,
+					bulkInsertLimit: defaultBulkInsertLimit,
 				},
 				Error: nil,
 			},
@@ -148,6 +153,23 @@ func TestNew(t *testing.T) {
 			},
 			Output: Output{
 				Error: fmt.Errorf("error `update` and `ignore` are exclusive option"),
+			},
+		},
+		Test{
+			Title: "success: set bulkInsertLimit option",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					BulkInsertLimit(100),
+				},
+			},
+			Output: Output{
+				Loader: FixtureLoader{
+					txManager:       txmanager.NewDB(nil),
+					driver:          MySQL,
+					bulkInsertLimit: 100,
+				},
+				Error: nil,
 			},
 		},
 	}
