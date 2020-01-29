@@ -172,6 +172,18 @@ func TestNew(t *testing.T) {
 				Error: nil,
 			},
 		},
+		Test{
+			Title: "error: set bulkInsertLimit option of zero",
+			Input: Input{
+				Driver: MySQL,
+				Options: []Option{
+					BulkInsertLimit(0),
+				},
+			},
+			Output: Output{
+				Error: errors.New("error `bulkInsertLimit` is not allowed 0 value"),
+			},
+		},
 	}
 
 	for _, test := range tests {

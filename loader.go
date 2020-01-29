@@ -101,6 +101,9 @@ func BulkInsert(bulk bool) Option {
 // BulkInsertLimit is sets the rows limit of one bulkInsert, which is enabled when bulkInsert is true
 func BulkInsertLimit(bulkInsertLimit int) Option {
 	return func(f *FixtureLoader) error {
+		if bulkInsertLimit == 0 {
+			return errors.New("error `bulkInsertLimit` is not allowed 0 value")
+		}
 		f.bulkInsertLimit = bulkInsertLimit
 		return nil
 	}
